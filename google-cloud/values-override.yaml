@@ -1,0 +1,34 @@
+# Example environment-specific overrides.
+# Rename this file for your environment (e.g., values-staging.yaml, values-production.yaml).
+
+# Target Google Cloud project where the Cloud Run agent will be deployed
+project:
+  id: my-gcp-project-id
+
+# Container image tags — the primary values updated per PR / release.
+# Source images are pulled from Quay.io, scanned, and pushed to GCR by Cloud Build.
+images:
+  agent:
+    tag: v1.2.3
+  handler:
+    tag: v1.2.3
+  mcp:
+    tag: "20260701"
+
+# Google Cloud Load Balancer — enable and set domain names for HTTPS endpoints.
+# When enabled, Cloud Build creates a GCLB with managed SSL certificate.
+loadBalancer:
+  agent:
+    enabled: "true"
+    domain: agent.example.com
+  handler:
+    enabled: "true"
+    domain: dcr.example.com
+
+# Deploy Job settings
+deploy:
+  # Git branch to clone when submitting Cloud Build.
+  # Cloud Build uses the source code from this branch (cloudbuild.yaml, service YAMLs).
+  gitBranch: release/v1.2
+  # Uncomment for private repositories:
+  # gitTokenSecret: git-credentials

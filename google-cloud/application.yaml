@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lightspeed-agent-gcp
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/part-of: lightspeed-agent
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: gcp-deploy
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    # Values source — environment overrides from the GITOPS repo
+    - repoURL: https://github.com/luis5tb/google-lightspeed-agent-gitops.git
+      targetRevision: main
+      ref: values
+    # Helm chart source — from the APP repo
+    - repoURL: https://github.com/luis5tb/google-lightspeed-agent.git
+      targetRevision: gitops-argocd-deployment
+      path: deploy/gitops/google-cloud
+      helm:
+        valueFiles:
+          - $values/google-cloud/values-override.yaml
+  destination:
+    # "in-cluster" for the local OpenShift cluster.
+    # For cross-cluster: change to the remote cluster's API URL (e.g.,
+    # https://api.cluster2.example.com:6443). The remote cluster must be
+    # registered with ArgoCD first. Note: PostSync Jobs run on the destination
+    # cluster, so ESO and the bootstrap secret must exist there.
+    server: https://kubernetes.default.svc
+    namespace: lightspeed-agent-gcp
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
