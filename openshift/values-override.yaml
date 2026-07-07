@@ -5,9 +5,10 @@
 # Images are pulled directly from Quay.io by the OpenShift cluster.
 agent:
   image:
+    repository: quay.io/ltomasbo/google-lightspeed-agent
     tag: latest
   # Public URL where the agent Route is exposed on this cluster
-  providerUrl: "lightspeed-agent-rh-lightspeed-agent.apps.ai5-devel.apps.eco-engineering.lab.eng.tlv2.redhat.com"
+  providerUrl: "https://lightspeed-agent-rh-lightspeed-agent.apps.ai5-devel.apps.eco-engineering.lab.eng.tlv2.redhat.com"
 
 mcp:
   image:
@@ -15,16 +16,25 @@ mcp:
 
 handler:
   image:
+    repository: quay.io/ltomasbo/google-marketplace-handler
     tag: latest
 
 standaloneUI:
   image:
+    repository: quay.io/ltomasbo/lightspeed-agent-ui
     tag: latest
 
 # Deployment mode:
 #   hybrid     — Agent on OpenShift, marketplace handler stays on GCP (Cloud Run)
 #   standalone — Everything on OpenShift (agent + handler + UI)
 deploymentMode: standalone
+
+google:
+  useVertexAI: true
+
+auth:
+  skipDcrJwtValidation: true
+  skipPubsubOidcVerification: true
 
 # Secrets are managed externally (SealedSecrets, ExternalSecrets, or Vault),
 # not by the chart.
