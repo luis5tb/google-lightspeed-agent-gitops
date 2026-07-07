@@ -98,9 +98,10 @@ rules:
   - apiGroups: ["networking.k8s.io"]
     resources: ["networkpolicies"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups: ["monitoring.coreos.com"]
-    resources: ["servicemonitors"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Uncomment if you have monitoring.coreos.com permissions and want ServiceMonitors:
+  # - apiGroups: ["monitoring.coreos.com"]
+  #   resources: ["servicemonitors"]
+  #   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -269,9 +270,10 @@ rules:
   - apiGroups: ["networking.k8s.io"]
     resources: ["networkpolicies"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups: ["monitoring.coreos.com"]
-    resources: ["servicemonitors"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Uncomment if you have monitoring.coreos.com permissions and want ServiceMonitors:
+  # - apiGroups: ["monitoring.coreos.com"]
+  #   resources: ["servicemonitors"]
+  #   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
