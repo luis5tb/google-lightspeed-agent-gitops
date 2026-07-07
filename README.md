@@ -232,11 +232,123 @@ gh pr create --title "Bump agent to v1.1.0"
 
 ## Adopting an Existing Deployment
 
-If the agent is already running on the spoke cluster (installed via `helm install` or manually), you can adopt it into ArgoCD without redeploying. The key difference from a fresh install is that the namespace and secrets already exist — you just need to make `values-override.yaml` match the current state so ArgoCD's first sync is a no-op.
+If the agent is already running (installed via `helm install` or manually), you can bring it under ArgoCD management without redeploying. The key is making `values-override.yaml` match the current state so ArgoCD's first sync is a no-op.
 
-### Step 1: Prepare the Spoke Cluster
+### Single-Cluster (ArgoCD and Agent on the Same Cluster)
 
-The ArgoCD ServiceAccount is still needed, but no namespace or secrets creation — they already exist. Log in to the spoke and create the SA with namespace-scoped permissions:
+The simplest case — ArgoCD deploys to `https://kubernetes.default.svc` (the local cluster). No cluster registration or extra ServiceAccounts needed.
+
+#### Step 1: Match values-override to the Current Deployment
+
+Capture the current image tags and config so the first sync doesn't change anything:
+
+```bash
+export AGENT_NAMESPACE=rh-lightspeed-agent   # your existing agent namespace
+
+# Get current image tags
+oc get deployment -n ${AGENT_NAMESPACE} -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.template.spec.containers[0].image}{"\n"}{end}'
+
+# Get current route host
+oc get route -n ${AGENT_NAMESPACE} -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.host}{"\n"}{end}'
+```
+
+Update `openshift/values-override.yaml` to match what's currently running:
+
+```yaml
+agent:
+  image:
+    tag: <current agent tag>
+  providerUrl: "https://<current-route-host>"
+
+mcp:
+  image:
+    tag: <current mcp tag>
+
+handler:
+  image:
+    tag: <current handler tag>
+
+deploymentMode: <current mode>
+
+secrets:
+  create: false
+```
+
+#### Step 2: Apply with Manual Sync First
+
+Update `openshift/application.yaml` — set the namespace to your existing one:
+
+```yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: <existing-agent-namespace>
+```
+
+Temporarily disable auto-sync to review what ArgoCD will do before it makes changes. Comment out the `automated` block:
+
+```yaml
+  syncPolicy:
+    # automated:
+    #   selfHeal: true
+    #   prune: true
+    syncOptions:
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+```
+
+Commit, push, and apply:
+
+```bash
+git add -A
+git commit -m "adopt existing single-cluster deployment"
+git push origin main
+
+oc apply -f openshift/application.yaml
+```
+
+#### Step 3: Review and Sync
+
+Check what ArgoCD detects as differences:
+
+```bash
+# View the app status
+oc get application lightspeed-agent -n openshift-gitops
+
+# Open the ArgoCD UI to inspect diffs visually
+oc get route openshift-gitops-server -n openshift-gitops -o jsonpath='{.spec.host}'
+```
+
+If the diff is clean (only metadata/annotation differences from ServerSideApply), trigger a manual sync from the ArgoCD UI or CLI.
+
+#### Step 4: Enable Auto-Sync
+
+Once the first sync succeeds and the agent is still running correctly, re-enable auto-sync in `openshift/application.yaml`:
+
+```yaml
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+```
+
+Commit and push:
+
+```bash
+git add openshift/application.yaml
+git commit -m "enable auto-sync after successful adoption"
+git push origin main
+oc apply -f openshift/application.yaml
+```
+
+From this point, all updates go through the GitOps PR workflow.
+
+### Cross-Cluster (ArgoCD on Hub, Agent on Spoke)
+
+Same approach as above, but with extra steps to register the spoke cluster and create a ServiceAccount for ArgoCD.
+
+#### Step 1: Create ArgoCD ServiceAccount on the Spoke
+
+No need to create the namespace or secrets — they already exist. Just the SA with namespace-scoped permissions:
 
 ```bash
 oc login $OCP_SPOKE_SERVER
@@ -307,9 +419,7 @@ echo "TOKEN: $TOKEN"
 echo "CA: $CA"
 ```
 
-### Step 2: Register the Spoke on the Hub
-
-Log in to the hub and register the spoke cluster:
+#### Step 2: Register the Spoke on the Hub
 
 ```bash
 oc login $OCP_HUB_SERVER
@@ -338,112 +448,6 @@ stringData:
 EOF
 ```
 
-### Step 3: Match values-override to the Current Deployment
+#### Step 3: Match, Apply, Review, Enable
 
-This is the critical step. Capture the current image tags and config from the spoke so the first ArgoCD sync doesn't change anything:
-
-```bash
-oc login $OCP_SPOKE_SERVER
-
-# Get current image tags
-oc get deployment -n rh-lightspeed-agent -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.template.spec.containers[0].image}{"\n"}{end}'
-```
-
-Update `openshift/values-override.yaml` to match. Make sure the image tags, deploymentMode, providerUrl, and any other config values reflect what's currently running:
-
-```yaml
-agent:
-  image:
-    tag: <current agent tag>
-  providerUrl: "https://<current-route-host>"
-
-mcp:
-  image:
-    tag: <current mcp tag>
-
-handler:
-  image:
-    tag: <current handler tag>
-
-deploymentMode: <current mode>
-
-secrets:
-  create: false
-```
-
-### Step 4: Apply with Manual Sync First
-
-Update `openshift/application.yaml` with the spoke destination and namespace:
-
-```yaml
-  destination:
-    server: $OCP_SPOKE_SERVER
-    namespace: <existing-agent-namespace>
-```
-
-Temporarily disable auto-sync to review what ArgoCD will do before it makes changes. Comment out the `automated` block:
-
-```yaml
-  syncPolicy:
-    # automated:
-    #   selfHeal: true
-    #   prune: true
-    syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
-      - RespectIgnoreDifferences=true
-```
-
-Commit, push, and apply:
-
-```bash
-git add -A
-git commit -m "adopt existing deployment on spoke cluster"
-git push origin main
-
-oc login $OCP_HUB_SERVER
-oc apply -f openshift/application.yaml
-```
-
-### Step 5: Review and Sync
-
-Check what ArgoCD detects as differences:
-
-```bash
-# View the app status — should show OutOfSync if there are diffs
-oc get application lightspeed-agent -n openshift-gitops
-
-# Open the ArgoCD UI to inspect diffs visually
-oc get route openshift-gitops-server -n openshift-gitops -o jsonpath='{.spec.host}'
-```
-
-If the diff is clean (only metadata/annotation differences from ServerSideApply), trigger a manual sync:
-
-```bash
-oc exec -n openshift-gitops deploy/openshift-gitops-server -- \
-  argocd app sync lightspeed-agent --local-only=false
-```
-
-Or sync from the ArgoCD UI.
-
-### Step 6: Enable Auto-Sync
-
-Once the first sync succeeds and the agent is still running correctly, re-enable auto-sync in `openshift/application.yaml`:
-
-```yaml
-  syncPolicy:
-    automated:
-      selfHeal: true
-      prune: true
-```
-
-Commit and push:
-
-```bash
-git add openshift/application.yaml
-git commit -m "enable auto-sync after successful adoption"
-git push origin main
-oc apply -f openshift/application.yaml
-```
-
-From this point, all updates go through the GitOps PR workflow.
+Follow the same steps as the single-cluster adoption above (Step 1 through Step 4), but set `destination.server` to `$OCP_SPOKE_SERVER` instead of `https://kubernetes.default.svc` in `openshift/application.yaml`.
