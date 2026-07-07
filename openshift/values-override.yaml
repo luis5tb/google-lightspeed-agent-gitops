@@ -5,7 +5,7 @@
 # Images are pulled directly from Quay.io by the OpenShift cluster.
 agent:
   image:
-    repository: quay.io/ltomasbo/google-lightspeed-agent
+    repository: quay.io/ecosystem-appeng/google-lightspeed-agent:on-pr-d229a4e07a8fc5682474025da91625ad9fe40cc1
     tag: latest
   # Public URL where the agent Route is exposed on this cluster
   providerUrl: "https://lightspeed-agent-rh-lightspeed-agent.apps.ai5-devel.apps.eco-engineering.lab.eng.tlv2.redhat.com"
@@ -16,7 +16,7 @@ mcp:
 
 handler:
   image:
-    repository: quay.io/ltomasbo/google-marketplace-handler
+    repository: quay.io/ecosystem-appeng/google-marketplace-handler:on-pr-d229a4e07a8fc5682474025da91625ad9fe40cc1
     tag: latest
 
 standaloneUI:
