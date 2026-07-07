@@ -64,35 +64,61 @@ Deploy the agent from a hub cluster (ArgoCD) to a separate spoke cluster. See al
 
 ### Step 1: Prepare the Spoke Cluster
 
-Log in to the spoke cluster and create a ServiceAccount for ArgoCD:
+Log in to the spoke cluster and create a ServiceAccount with namespace-scoped permissions. No cluster-admin required — ArgoCD only needs access to the agent namespace:
 
 ```bash
 oc login $OCP_SPOKE_SERVER
 
-oc create namespace rh-lightspeed-agent-argocd
-oc create sa rh-lightspeed-agent-argocd-sa -n rh-lightspeed-agent-argocd
-oc adm policy add-cluster-role-to-user cluster-admin \
-  system:serviceaccount:rh-lightspeed-agent-argocd:rh-lightspeed-agent-argocd-sa
+export AGENT_NAMESPACE=lightspeed-agent   # adjust to your namespace
 
-# Create a long-lived token
 oc apply -f - <<EOF
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rh-lightspeed-agent-argocd-sa
+  namespace: ${AGENT_NAMESPACE}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argocd-manager
+  namespace: ${AGENT_NAMESPACE}
+rules:
+  - apiGroups: ["", "apps", "batch", "rbac.authorization.k8s.io",
+                "route.openshift.io", "networking.k8s.io",
+                "autoscaling", "policy"]
+    resources: ["*"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argocd-manager
+  namespace: ${AGENT_NAMESPACE}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: argocd-manager
+subjects:
+  - kind: ServiceAccount
+    name: rh-lightspeed-agent-argocd-sa
+    namespace: ${AGENT_NAMESPACE}
+---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: argocd-admin-sa-secret
-  namespace: rh-lightspeed-agent-argocd
+  name: argocd-sa-secret
+  namespace: ${AGENT_NAMESPACE}
   annotations:
     kubernetes.io/service-account.name: rh-lightspeed-agent-argocd-sa
 type: kubernetes.io/service-account-token
 EOF
 
 # Save these values — you'll need them on the hub
-TOKEN=$(oc get secret argocd-admin-sa-secret -n rh-lightspeed-agent-argocd \
+TOKEN=$(oc get secret argocd-sa-secret -n ${AGENT_NAMESPACE} \
   -o jsonpath='{.data.token}' | base64 -d)
-CA=$(oc get secret argocd-admin-sa-secret -n rh-lightspeed-agent-argocd \
+CA=$(oc get secret argocd-sa-secret -n ${AGENT_NAMESPACE} \
   -o jsonpath='{.data.ca\.crt}' | base64)
-API_URL=$(oc whoami --show-server)
-echo "API_URL: $API_URL"
 echo "TOKEN: $TOKEN"
 echo "CA: $CA"
 ```
@@ -102,8 +128,7 @@ Create the app secrets on the spoke cluster:
 ```bash
 cp openshift/secrets.yaml.example my-secrets.yaml
 vi my-secrets.yaml   # fill in real credentials
-oc create namespace lightspeed-agent
-oc apply -f my-secrets.yaml -n lightspeed-agent
+oc apply -f my-secrets.yaml -n ${AGENT_NAMESPACE}
 ```
 
 See the [OpenShift deployment docs](https://github.com/RHEcosystemAppEng/google-lightspeed-agent/blob/main/deploy/openshift/README.md#4-configure-values) in the app repo for details on each secret field and configuration options (Vertex AI, persistent sessions, etc.).
@@ -112,12 +137,11 @@ See the [OpenShift deployment docs](https://github.com/RHEcosystemAppEng/google-
 
 ### Step 2: Register the Spoke on the Hub Cluster
 
-Log in to the hub cluster and create the ArgoCD cluster connection Secret:
+Log in to the hub cluster and create the ArgoCD cluster connection Secret. The `namespaces` field limits ArgoCD to the agent namespace only:
 
 ```bash
 oc login $OCP_HUB_SERVER
 
-# Use the TOKEN, CA, and API_URL from step 1
 oc apply -f - <<EOF
 apiVersion: v1
 kind: Secret
@@ -129,13 +153,14 @@ metadata:
 type: Opaque
 stringData:
   name: spoke-cluster
-  server: <API_URL>
+  server: $OCP_SPOKE_SERVER
+  namespaces: "${AGENT_NAMESPACE}"
   config: |
     {
-      "bearerToken": "<TOKEN>",
+      "bearerToken": "<TOKEN from step 1>",
       "tlsClientConfig": {
         "insecure": false,
-        "caData": "<CA>"
+        "caData": "<CA from step 1>"
       }
     }
 EOF
@@ -198,36 +223,63 @@ If the agent is already running on the spoke cluster (installed via `helm instal
 
 ### Step 1: Prepare the Spoke Cluster
 
-The ArgoCD ServiceAccount is still needed. Log in to the spoke and create it:
+The ArgoCD ServiceAccount is still needed, but no namespace or secrets creation — they already exist. Log in to the spoke and create the SA with namespace-scoped permissions:
 
 ```bash
 oc login $OCP_SPOKE_SERVER
 
-oc create namespace rh-lightspeed-agent-argocd
-oc create sa rh-lightspeed-agent-argocd-sa -n rh-lightspeed-agent-argocd
-oc adm policy add-cluster-role-to-user cluster-admin \
-  system:serviceaccount:rh-lightspeed-agent-argocd:rh-lightspeed-agent-argocd-sa
+export AGENT_NAMESPACE=rh-lightspeed-agent   # your existing agent namespace
 
 oc apply -f - <<EOF
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rh-lightspeed-agent-argocd-sa
+  namespace: ${AGENT_NAMESPACE}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argocd-manager
+  namespace: ${AGENT_NAMESPACE}
+rules:
+  - apiGroups: ["", "apps", "batch", "rbac.authorization.k8s.io",
+                "route.openshift.io", "networking.k8s.io",
+                "autoscaling", "policy"]
+    resources: ["*"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argocd-manager
+  namespace: ${AGENT_NAMESPACE}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: argocd-manager
+subjects:
+  - kind: ServiceAccount
+    name: rh-lightspeed-agent-argocd-sa
+    namespace: ${AGENT_NAMESPACE}
+---
+apiVersion: v1
 kind: Secret
 metadata:
-  name: argocd-admin-sa-secret
-  namespace: rh-lightspeed-agent-argocd
+  name: argocd-sa-secret
+  namespace: ${AGENT_NAMESPACE}
   annotations:
     kubernetes.io/service-account.name: rh-lightspeed-agent-argocd-sa
 type: kubernetes.io/service-account-token
 EOF
 
-TOKEN=$(oc get secret argocd-admin-sa-secret -n rh-lightspeed-agent-argocd \
+TOKEN=$(oc get secret argocd-sa-secret -n ${AGENT_NAMESPACE} \
   -o jsonpath='{.data.token}' | base64 -d)
-CA=$(oc get secret argocd-admin-sa-secret -n rh-lightspeed-agent-argocd \
+CA=$(oc get secret argocd-sa-secret -n ${AGENT_NAMESPACE} \
   -o jsonpath='{.data.ca\.crt}' | base64)
 echo "TOKEN: $TOKEN"
 echo "CA: $CA"
 ```
-
-No need to create the namespace or secrets — they already exist from the current deployment.
 
 ### Step 2: Register the Spoke on the Hub
 
@@ -248,6 +300,7 @@ type: Opaque
 stringData:
   name: spoke-cluster
   server: $OCP_SPOKE_SERVER
+  namespaces: "${AGENT_NAMESPACE}"
   config: |
     {
       "bearerToken": "<TOKEN from step 1>",
