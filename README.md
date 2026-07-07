@@ -84,11 +84,23 @@ metadata:
   name: argocd-manager
   namespace: ${AGENT_NAMESPACE}
 rules:
-  - apiGroups: ["", "apps", "batch", "rbac.authorization.k8s.io",
-                "route.openshift.io", "networking.k8s.io",
-                "autoscaling", "policy"]
-    resources: ["*"]
-    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "secrets",
+                "serviceaccounts", "persistentvolumeclaims",
+                "endpoints", "events"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["route.openshift.io"]
+    resources: ["routes"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["monitoring.coreos.com"]
+    resources: ["servicemonitors"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -243,11 +255,23 @@ metadata:
   name: argocd-manager
   namespace: ${AGENT_NAMESPACE}
 rules:
-  - apiGroups: ["", "apps", "batch", "rbac.authorization.k8s.io",
-                "route.openshift.io", "networking.k8s.io",
-                "autoscaling", "policy"]
-    resources: ["*"]
-    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "secrets",
+                "serviceaccounts", "persistentvolumeclaims",
+                "endpoints", "events"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["route.openshift.io"]
+    resources: ["routes"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["monitoring.coreos.com"]
+    resources: ["servicemonitors"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
