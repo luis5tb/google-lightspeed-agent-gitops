@@ -64,15 +64,12 @@ oc create namespace rh-lightspeed-agent-argocd
 **3. Configure ArgoCD to watch the new namespace:**
 
 ```bash
-oc edit argocd openshift-gitops -n openshift-gitops
-```
-
-Add under `spec.sourceNamespaces`:
-
-```yaml
+oc patch argocd openshift-gitops -n openshift-gitops --type merge -p '
 spec:
   sourceNamespaces:
+    - openshift-gitops
     - rh-lightspeed-agent-argocd
+'
 ```
 
 **4. Create an AppProject** to scope what the team can deploy:
@@ -108,21 +105,15 @@ EOF
 **5. Grant team access in ArgoCD RBAC:**
 
 ```bash
-oc edit argocd openshift-gitops -n openshift-gitops
-```
-
-Add under `spec.rbac.policy`:
-
-```yaml
+oc patch argocd openshift-gitops -n openshift-gitops --type merge -p '
 spec:
   rbac:
     policy: |
-      p, role:lightspeed-team, applications, *, rh-lightspeed-agent/*, allow
-      p, role:lightspeed-team, projects, get, rh-lightspeed-agent, allow
-      g, <user-or-group>, role:lightspeed-team
+      g, system:cluster-admins, role:admin
+      g, cluster-admins, role:admin
+      g, admins, role:admin
+'
 ```
-
-Replace `<user-or-group>` with the OpenShift user or group that should manage the application.
 
 ### Team: Deploy
 
