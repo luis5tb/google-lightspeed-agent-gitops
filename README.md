@@ -97,19 +97,16 @@ echo "TOKEN: $TOKEN"
 echo "CA: $CA"
 ```
 
-Create the namespace and app secrets the agent needs:
+Create the app secrets on the spoke cluster:
 
 ```bash
+cp openshift/secrets.yaml.example my-secrets.yaml
+vi my-secrets.yaml   # fill in real credentials (googleApiKey, SSO, Redis, etc.)
 oc create namespace lightspeed-agent
-
-# Create secrets (adjust for your secrets management approach)
-oc create secret generic lightspeed-secrets \
-  --from-literal=RED_HAT_SSO_CLIENT_ID=<value> \
-  --from-literal=RED_HAT_SSO_CLIENT_SECRET=<value> \
-  --from-literal=DATABASE_URL=<value> \
-  --from-literal=SESSION_DATABASE_URL=<value> \
-  -n lightspeed-agent
+oc apply -f my-secrets.yaml -n lightspeed-agent
 ```
+
+> **Note:** This manual approach is for testing and development. For production, use a secrets management solution such as Vault, External Secrets Operator, or SealedSecrets.
 
 ### Step 2: Register the Spoke on the Hub Cluster
 
