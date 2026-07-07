@@ -61,7 +61,21 @@ See [setup docs](https://github.com/RHEcosystemAppEng/google-lightspeed-agent/tr
 oc create namespace rh-lightspeed-agent-argocd
 ```
 
-**3. Configure ArgoCD to watch the new namespace:**
+**3. Grant ArgoCD access to the agent namespace:**
+
+The ArgoCD controller needs permissions to manage resources in the namespace where the agent runs:
+
+```bash
+oc label namespace rh-lightspeed-agent \
+  argocd.argoproj.io/managed-by=openshift-gitops
+
+oc create rolebinding argocd-admin \
+  --clusterrole=admin \
+  --serviceaccount=openshift-gitops:openshift-gitops-argocd-application-controller \
+  -n rh-lightspeed-agent
+```
+
+**4. Configure ArgoCD to watch the Application CR namespace:**
 
 ```bash
 oc patch argocd openshift-gitops -n openshift-gitops --type merge -p '
@@ -72,7 +86,7 @@ spec:
 '
 ```
 
-**4. Create an AppProject** to scope what the team can deploy:
+**5. Create an AppProject** to scope what the team can deploy:
 
 ```bash
 oc apply -f - <<EOF
@@ -102,7 +116,7 @@ EOF
 
 > Update `sourceRepos` if using fork URLs for testing. Add more `destinations` for cross-cluster deployments.
 
-**5. Grant team access in ArgoCD RBAC:**
+**6. Grant team access in ArgoCD RBAC:**
 
 ```bash
 oc patch argocd openshift-gitops -n openshift-gitops --type merge -p '
