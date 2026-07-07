@@ -30,11 +30,11 @@ spec:
     # https://api.cluster2.example.com:6443). The remote cluster must be
     # registered with ArgoCD first.
     server: https://kubernetes.default.svc
-    namespace: lightspeed-agent
+    namespace: rh-lightspeed-agent
   syncPolicy:
-    automated:
-      selfHeal: true
-      prune: true
+    #automated:
+    #  selfHeal: true
+    #  prune: true
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true

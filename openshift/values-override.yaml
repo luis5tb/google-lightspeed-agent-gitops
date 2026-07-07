@@ -7,7 +7,7 @@ agent:
   image:
     tag: latest
   # Public URL where the agent Route is exposed on this cluster
-  providerUrl: "https://lightspeed-agent.apps.example.com"
+  providerUrl: "lightspeed-agent-rh-lightspeed-agent.apps.ai5-devel.apps.eco-engineering.lab.eng.tlv2.redhat.com"
 
 mcp:
   image:
@@ -24,7 +24,7 @@ standaloneUI:
 # Deployment mode:
 #   hybrid     — Agent on OpenShift, marketplace handler stays on GCP (Cloud Run)
 #   standalone — Everything on OpenShift (agent + handler + UI)
-deploymentMode: hybrid
+deploymentMode: standalone
 
 # Secrets are managed externally (SealedSecrets, ExternalSecrets, or Vault),
 # not by the chart.
