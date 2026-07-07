@@ -3,14 +3,14 @@ kind: Application
 metadata:
   # Change this name per environment (e.g., lightspeed-agent-staging, lightspeed-agent-prod)
   name: lightspeed-agent
-  namespace: openshift-gitops
+  namespace: rh-lightspeed-agent-argocd
   labels:
     app.kubernetes.io/part-of: lightspeed-agent
     app.kubernetes.io/managed-by: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: default
+  project: rh-lightspeed-agent
   sources:
     # Values source — environment overrides from the GITOPS repo
     - repoURL: https://github.com/luis5tb/google-lightspeed-agent-gitops.git
