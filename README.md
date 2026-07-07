@@ -41,22 +41,122 @@ gh pr create --title "Bump agent to v1.3.0"
 
 ## Initial Setup
 
-1. Install prerequisites on the OpenShift cluster (ArgoCD, ESO for GCP target):
-   ```bash
-   bash deploy/gitops/setup/install-gitops-operator.sh
-   bash deploy/gitops/setup/install-eso-operator.sh      # GCP target only
-   bash deploy/gitops/setup/setup-gcp-sa.sh              # GCP target only
-   ```
-   See [setup docs](https://github.com/RHEcosystemAppEng/google-lightspeed-agent/tree/main/deploy/gitops/setup) in the app repo.
+Setup is split between a **cluster-admin** (one-time) and the **team** (ongoing).
 
-2. Edit the `values-override.yaml` for your target with environment-specific values.
+### Cluster-Admin: One-Time Setup
 
-3. Apply the Application CR:
-   ```bash
-   oc apply -f openshift/application.yaml
-   # or
-   oc apply -f google-cloud/application.yaml
-   ```
+These steps require cluster-admin access. They configure the existing ArgoCD instance in `openshift-gitops` to support the team's namespace and grant the team visibility.
+
+**1. Install the OpenShift GitOps operator** (if not already installed):
+
+```bash
+bash deploy/gitops/setup/install-gitops-operator.sh
+```
+
+See [setup docs](https://github.com/RHEcosystemAppEng/google-lightspeed-agent/tree/main/deploy/gitops/setup) in the app repo. For the Google Cloud target, also run `install-eso-operator.sh` and `setup-gcp-sa.sh`.
+
+**2. Create the team's namespace for Application CRs:**
+
+```bash
+oc create namespace rh-lightspeed-agent-argocd
+```
+
+**3. Configure ArgoCD to watch the new namespace:**
+
+```bash
+oc edit argocd openshift-gitops -n openshift-gitops
+```
+
+Add under `spec.sourceNamespaces`:
+
+```yaml
+spec:
+  sourceNamespaces:
+    - rh-lightspeed-agent-argocd
+```
+
+**4. Create an AppProject** to scope what the team can deploy:
+
+```bash
+oc apply -f - <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: rh-lightspeed-agent
+  namespace: openshift-gitops
+spec:
+  description: Red Hat Lightspeed Agent project
+  sourceRepos:
+    - 'https://github.com/RHEcosystemAppEng/google-lightspeed-agent.git'
+    - 'https://github.com/RHEcosystemAppEng/google-lightspeed-agent-gitops.git'
+  sourceNamespaces:
+    - rh-lightspeed-agent-argocd
+  destinations:
+    - namespace: rh-lightspeed-agent
+      server: 'https://kubernetes.default.svc'
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+EOF
+```
+
+> Update `sourceRepos` if using fork URLs for testing. Add more `destinations` for cross-cluster deployments.
+
+**5. Grant team access in ArgoCD RBAC:**
+
+```bash
+oc edit argocd openshift-gitops -n openshift-gitops
+```
+
+Add under `spec.rbac.policy`:
+
+```yaml
+spec:
+  rbac:
+    policy: |
+      p, role:lightspeed-team, applications, *, rh-lightspeed-agent/*, allow
+      p, role:lightspeed-team, projects, get, rh-lightspeed-agent, allow
+      g, <user-or-group>, role:lightspeed-team
+```
+
+Replace `<user-or-group>` with the OpenShift user or group that should manage the application.
+
+### Team: Deploy
+
+Once the cluster-admin has completed the steps above, team members can manage deployments without cluster-admin access.
+
+**1. Edit `openshift/application.yaml`** — set the team namespace and project:
+
+```yaml
+metadata:
+  name: lightspeed-agent
+  namespace: rh-lightspeed-agent-argocd    # team namespace, NOT openshift-gitops
+spec:
+  project: rh-lightspeed-agent             # AppProject, NOT default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rh-lightspeed-agent
+```
+
+**2. Edit `openshift/values-override.yaml`** with environment values (image tags, providerUrl, etc.).
+
+**3. Commit, push, and apply:**
+
+```bash
+git add -A
+git commit -m "configure deployment"
+git push origin main
+oc apply -f openshift/application.yaml
+```
+
+**4. Access the ArgoCD UI:**
+
+```bash
+oc get route openshift-gitops-server -n openshift-gitops -o jsonpath='{.spec.host}'
+```
 
 ## Cross-Cluster Deployment
 
