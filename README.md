@@ -60,4 +60,135 @@ gh pr create --title "Bump agent to v1.3.0"
 
 ## Cross-Cluster Deployment
 
-For deploying to a remote cluster, see the [cross-cluster docs](https://github.com/RHEcosystemAppEng/google-lightspeed-agent/tree/main/deploy/gitops/README.md#cross-cluster-deployment) in the app repo. The key change is updating `destination.server` in the Application CR.
+Deploy the agent from a hub cluster (ArgoCD) to a separate spoke cluster. See also the [cross-cluster reference](https://github.com/RHEcosystemAppEng/google-lightspeed-agent/tree/main/deploy/gitops/README.md#cross-cluster-deployment) in the app repo for credential rotation and ESO details.
+
+### Step 1: Prepare the Spoke Cluster
+
+Log in to the spoke cluster and create a ServiceAccount for ArgoCD:
+
+```bash
+oc login <spoke-cluster-api-url>
+
+oc create namespace admin-argocd
+oc create sa admin-argocd-sa -n admin-argocd
+oc adm policy add-cluster-role-to-user cluster-admin \
+  system:serviceaccount:admin-argocd:admin-argocd-sa
+
+# Create a long-lived token
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argocd-admin-sa-secret
+  namespace: admin-argocd
+  annotations:
+    kubernetes.io/service-account.name: admin-argocd-sa
+type: kubernetes.io/service-account-token
+EOF
+
+# Save these values — you'll need them on the hub
+TOKEN=$(oc get secret argocd-admin-sa-secret -n admin-argocd \
+  -o jsonpath='{.data.token}' | base64 -d)
+CA=$(oc get secret argocd-admin-sa-secret -n admin-argocd \
+  -o jsonpath='{.data.ca\.crt}' | base64)
+API_URL=$(oc whoami --show-server)
+echo "API_URL: $API_URL"
+echo "TOKEN: $TOKEN"
+echo "CA: $CA"
+```
+
+Create the namespace and app secrets the agent needs:
+
+```bash
+oc create namespace lightspeed-agent
+
+# Create secrets (adjust for your secrets management approach)
+oc create secret generic lightspeed-secrets \
+  --from-literal=RED_HAT_SSO_CLIENT_ID=<value> \
+  --from-literal=RED_HAT_SSO_CLIENT_SECRET=<value> \
+  --from-literal=DATABASE_URL=<value> \
+  --from-literal=SESSION_DATABASE_URL=<value> \
+  -n lightspeed-agent
+```
+
+### Step 2: Register the Spoke on the Hub Cluster
+
+Log in to the hub cluster and create the ArgoCD cluster connection Secret:
+
+```bash
+oc login <hub-cluster-api-url>
+
+# Use the TOKEN, CA, and API_URL from step 1
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: spoke-cluster
+  namespace: openshift-gitops
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+type: Opaque
+stringData:
+  name: spoke-cluster
+  server: <API_URL>
+  config: |
+    {
+      "bearerToken": "<TOKEN>",
+      "tlsClientConfig": {
+        "insecure": false,
+        "caData": "<CA>"
+      }
+    }
+EOF
+```
+
+### Step 3: Configure and Apply
+
+Update `openshift/application.yaml` — point `destination.server` to the spoke:
+
+```yaml
+  destination:
+    server: <API_URL of spoke cluster>
+    namespace: lightspeed-agent
+```
+
+Update `openshift/values-override.yaml` with your environment values (image tags, providerUrl, etc.).
+
+Commit and push so ArgoCD can read the config:
+
+```bash
+git add -A
+git commit -m "configure spoke cluster deployment"
+git push origin main
+```
+
+Apply the Application CR on the hub:
+
+```bash
+oc apply -f openshift/application.yaml
+```
+
+### Step 4: Verify
+
+```bash
+# On the hub — check ArgoCD sync status
+oc get application lightspeed-agent -n openshift-gitops \
+  -o jsonpath='{.status.sync.status}{" "}{.status.health.status}'
+# Expected: Synced Healthy
+
+# On the spoke — check pods are running
+oc login <spoke-cluster-api-url>
+oc get pods -n lightspeed-agent
+```
+
+### Day-2: Update Image Tags
+
+```bash
+git checkout -b bump-v1.1.0
+vi openshift/values-override.yaml    # change image tags
+git add openshift/values-override.yaml
+git commit -m "chore: bump agent to v1.1.0"
+git push origin bump-v1.1.0
+gh pr create --title "Bump agent to v1.1.0"
+# SRE reviews and merges → ArgoCD auto-syncs to spoke
+```
