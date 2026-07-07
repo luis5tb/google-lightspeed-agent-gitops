@@ -101,10 +101,12 @@ Create the app secrets on the spoke cluster:
 
 ```bash
 cp openshift/secrets.yaml.example my-secrets.yaml
-vi my-secrets.yaml   # fill in real credentials (googleApiKey, SSO, Redis, etc.)
+vi my-secrets.yaml   # fill in real credentials
 oc create namespace lightspeed-agent
 oc apply -f my-secrets.yaml -n lightspeed-agent
 ```
+
+See the [OpenShift deployment docs](https://github.com/RHEcosystemAppEng/google-lightspeed-agent/blob/main/deploy/openshift/README.md#4-configure-values) in the app repo for details on each secret field and configuration options (Vertex AI, persistent sessions, etc.).
 
 > **Note:** This manual approach is for testing and development. For production, use a secrets management solution such as Vault, External Secrets Operator, or SealedSecrets.
 
