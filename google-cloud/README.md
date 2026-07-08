@@ -46,6 +46,7 @@ This creates a GCP service account (`lightspeed-gitops`) with the required IAM r
 | `roles/secretmanager.secretAccessor` | Project | ESO reads secrets from GCP SM |
 | `roles/cloudbuild.builds.editor` | Project | Submit Cloud Build pipelines |
 | `roles/run.admin` | Project | Deploy Cloud Run services |
+| `roles/serviceusage.serviceUsageConsumer` | Project | `gcloud builds submit` needs Cloud Storage bucket access |
 | `roles/iam.serviceAccountUser` | Cloud Run runtime SA | Impersonate the runtime SA |
 
 Alternatively, create the bootstrap secret manually:
@@ -72,15 +73,9 @@ oc create rolebinding argocd-admin \
 
 Both the OpenShift and Google Cloud targets share the same namespace — these commands are the same as in the [OpenShift setup](../openshift/README.md#1-grant-argocd-access-to-the-agent-namespace).
 
-### 4. Run GCP setup (if not done already)
-
-If the GCP environment doesn't exist yet, run the Cloud Run setup script to create APIs, service accounts, Cloud SQL, Redis, Pub/Sub, and secrets in GCP Secret Manager:
-
-```bash
-./deploy/cloudrun/setup.sh
-```
-
 ## Deploy
+
+> **New environment?** If the GCP infrastructure doesn't exist yet (Cloud SQL, Redis, Pub/Sub, service accounts, secrets in GCP Secret Manager), run the one-time setup first. See the [Cloud Run deployment guide](https://github.com/RHEcosystemAppEng/google-lightspeed-agent/tree/main/deploy/cloudrun/README.md) in the app repo for details. This is not needed when [adopting an existing deployment](#adopting-an-existing-gcp-environment).
 
 ### 1. Edit `values-override.yaml`
 
@@ -99,8 +94,11 @@ images:
     tag: "20260701"
 
 deploy:
+  gitRepo: https://github.com/RHEcosystemAppEng/google-lightspeed-agent.git
   gitBranch: main
 ```
+
+> **Why `deploy.gitRepo` and `deploy.gitBranch`?** ArgoCD clones the repo to render the Helm chart (using `application.yaml`'s `repoURL` + `targetRevision`), but the PostSync deploy Job runs in a separate container and does its own `git clone` to get `cloudbuild.yaml` and the Cloud Run service YAMLs. These two clones are independent — the Job has no access to ArgoCD's checkout. `deploy.gitRepo` and `deploy.gitBranch` control the Job's clone and should match the `application.yaml` source. If using a fork, set `deploy.gitRepo` to the fork URL.
 
 See `deploy/gitops/google-cloud/values.yaml` in the [app repo](https://github.com/RHEcosystemAppEng/google-lightspeed-agent) for all available parameters and defaults.
 
@@ -150,21 +148,21 @@ The key is making `values-override.yaml` match the current GCP state so Cloud Bu
 ### Step 1: Capture the current GCP state
 
 ```bash
-export PROJECT_ID=my-gcp-project-id
-export REGION=us-central1
+export GOOGLE_CLOUD_PROJECT=my-gcp-project-id
+export GOOGLE_CLOUD_LOCATION=us-central1
 
 # Get current Cloud Run service details
 gcloud run services describe lightspeed-agent \
-  --region=${REGION} --project=${PROJECT_ID} \
+  --region=${GOOGLE_CLOUD_LOCATION} --project=${GOOGLE_CLOUD_PROJECT} \
   --format='value(spec.template.spec.containers[0].image)'
 
 gcloud run services describe marketplace-handler \
-  --region=${REGION} --project=${PROJECT_ID} \
+  --region=${GOOGLE_CLOUD_LOCATION} --project=${GOOGLE_CLOUD_PROJECT} \
   --format='value(spec.template.spec.containers[0].image)'
 
 # Check load balancer configuration
-gcloud compute forwarding-rules list --project=${PROJECT_ID}
-gcloud compute ssl-certificates list --project=${PROJECT_ID}
+gcloud compute forwarding-rules list --project=${GOOGLE_CLOUD_PROJECT}
+gcloud compute ssl-certificates list --project=${GOOGLE_CLOUD_PROJECT}
 ```
 
 ### Step 2: Match `values-override.yaml` to current state
@@ -192,7 +190,8 @@ loadBalancer:
     domain: dcr.example.com
 
 deploy:
-  gitBranch: main                # branch containing cloudbuild.yaml
+  gitRepo: https://github.com/RHEcosystemAppEng/google-lightspeed-agent.git
+  gitBranch: main                # must match application.yaml targetRevision
 ```
 
 ### Step 3: Ensure prerequisites are in place
@@ -224,11 +223,11 @@ oc get application lightspeed-agent-gcp -n rh-lightspeed-agent-argocd \
 
 # Cloud Run services are still healthy
 gcloud run services describe lightspeed-agent \
-  --region=${REGION} --project=${PROJECT_ID} \
+  --region=${GOOGLE_CLOUD_LOCATION} --project=${GOOGLE_CLOUD_PROJECT} \
   --format='value(status.conditions[0].status)'
 
 gcloud run services describe marketplace-handler \
-  --region=${REGION} --project=${PROJECT_ID} \
+  --region=${GOOGLE_CLOUD_LOCATION} --project=${GOOGLE_CLOUD_PROJECT} \
   --format='value(status.conditions[0].status)'
 ```
 

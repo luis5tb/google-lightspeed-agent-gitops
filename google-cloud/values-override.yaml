@@ -3,32 +3,40 @@
 
 # Target Google Cloud project where the Cloud Run agent will be deployed
 project:
-  id: my-gcp-project-id
+  id: redhat-marketplace-dev
 
 # Container image tags — the primary values updated per PR / release.
 # Source images are pulled from Quay.io, scanned, and pushed to GCR by Cloud Build.
 images:
   agent:
-    tag: v1.2.3
+    tag: 40ebfd9ed7ddefdc429c047b6f5e5c90e8e445ba
   handler:
-    tag: v1.2.3
+    tag: 40ebfd9ed7ddefdc429c047b6f5e5c90e8e445ba
   mcp:
-    tag: "20260701"
+    tag: latest
 
 # Google Cloud Load Balancer — enable and set domain names for HTTPS endpoints.
 # When enabled, Cloud Build creates a GCLB with managed SSL certificate.
 loadBalancer:
   agent:
     enabled: "true"
-    domain: agent.example.com
+    domain: lightspeed-agent.emerge-partners.devcluster.openshift.com
   handler:
     enabled: "true"
-    domain: dcr.example.com
+    domain: lightspeed-dcr.emerge-partners.devcluster.openshift.com
 
 # Deploy Job settings
 deploy:
   # Git branch to clone when submitting Cloud Build.
   # Cloud Build uses the source code from this branch (cloudbuild.yaml, service YAMLs).
-  gitBranch: release/v1.2
+  gitBranch: gitops-argocd-deployment
+  gitRepo: https://github.com/luis5tb/google-lightspeed-agent.git
   # Uncomment for private repositories:
   # gitTokenSecret: git-credentials
+  gcpSecretName: gcp-sa-bootstrap
+
+externalSecrets:
+  enabled: false
+
+security:
+  scanSeverity: CRITICAL
