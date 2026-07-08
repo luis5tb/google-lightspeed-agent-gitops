@@ -28,7 +28,7 @@ ArgoCD watches both repos. When a change is merged to `main` in either repo, Arg
 | Target | What ArgoCD manages | Where the workload runs | Guide |
 |---|---|---|---|
 | **OpenShift** | K8s resources directly (Deployments, Services, Routes) | OpenShift cluster | [openshift/README.md](openshift/README.md) |
-| **Google Cloud** | Intermediate K8s resources (ConfigMap, ExternalSecret, Job) | Cloud Run on GCP | [google-cloud/README.md](google-cloud/README.md) |
+| **Google Cloud** | Intermediate K8s resources (ConfigMap, Secret, Job) | Cloud Run on GCP | [google-cloud/README.md](google-cloud/README.md) |
 
 ## Common Setup (Cluster-Admin)
 
@@ -104,4 +104,4 @@ spec:
 
 ### Google Cloud target: additional prerequisites
 
-The Google Cloud target requires the External Secrets Operator and a GCP service account. See [google-cloud/README.md](google-cloud/README.md#prerequisites) for details.
+The Google Cloud target requires a GCP service account. See [google-cloud/README.md](google-cloud/README.md#prerequisites) for details.

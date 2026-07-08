@@ -15,7 +15,7 @@ PR merged → ArgoCD syncs K8s resources on OpenShift → PostSync Job → gclou
 3. ArgoCD detects the change and begins sync
 4. ArgoCD creates/updates these K8s resources on the OpenShift cluster:
    - **ConfigMap** — maps `values.yaml` fields to Cloud Build `_VARIABLE` substitutions
-   - **ExternalSecret** (via ESO) — pulls the GCP SA key from GCP Secret Manager into a K8s Secret
+   - **Secret** — the GCP SA key from the bootstrap secret (`gcp-sa-bootstrap`), used by the deploy Job
    - **ServiceAccount** + RBAC — grants the deploy Job read access to secrets and configmaps
 5. **PostSync hook Job** — clones the app repo and runs `gcloud builds submit` with substitutions from the ConfigMap
 6. **Cloud Build** — pulls images from Quay.io, scans with Trivy, pushes to GCR, deploys Cloud Run services
@@ -26,13 +26,7 @@ The workload runs on GCP. The OpenShift cluster only hosts the ArgoCD orchestrat
 
 In addition to the [common setup](../README.md#common-setup-cluster-admin), the Google Cloud target requires:
 
-### 1. Install the External Secrets Operator
-
-```bash
-bash deploy/gitops/setup/install-eso-operator.sh
-```
-
-### 2. Create the GCP service account and bootstrap secret
+### 1. Create the GCP service account and bootstrap secret
 
 ```bash
 export GOOGLE_CLOUD_PROJECT=my-project-id
@@ -46,29 +40,16 @@ export GOOGLE_CLOUD_PROJECT=my-project-id
 CLOUD_RUN_SA=sa-lightspeed-agent bash deploy/gitops/setup/setup-gcp-sa.sh
 ```
 
-This creates a GCP service account (`lightspeed-gitops`) with the required IAM roles and stores its key in **two places**:
-
-- **GCP Secret Manager** (`gcp-service-account-key`) — source of truth; ESO pulls from here to create the K8s Secret used by the deploy Job
-- **K8s Secret on OpenShift** (`gcp-sa-bootstrap`) — bootstrap credential; the SecretStore uses this to authenticate ESO to GCP Secret Manager
+This creates a GCP service account (`lightspeed-gitops`) with the required IAM roles and stores its key in a K8s Secret (`gcp-sa-bootstrap`) on the OpenShift cluster, used by the deploy Job.
 
 | Role | Scope | Purpose |
 |---|---|---|
-| `roles/secretmanager.secretAccessor` | Project | ESO reads secrets from GCP SM |
 | `roles/cloudbuild.builds.editor` | Project | Submit Cloud Build pipelines |
 | `roles/run.admin` | Project | Deploy Cloud Run services |
 | `roles/serviceusage.serviceUsageConsumer` | Project | `gcloud builds submit` API access |
 | `roles/iam.serviceAccountUser` | Cloud Run runtime SA | Impersonate the runtime SA |
 
-To disable ESO and use the bootstrap secret directly instead:
-
-```yaml
-externalSecrets:
-  enabled: false
-deploy:
-  gcpSecretName: gcp-sa-bootstrap
-```
-
-### 3. Grant ArgoCD access to the namespace
+### 2. Grant ArgoCD access to the namespace
 
 If not already done for the OpenShift target:
 
@@ -244,7 +225,7 @@ deploy:
 
 ### Step 3: Ensure prerequisites are in place
 
-Complete the [prerequisites](#prerequisites) above (ESO, GCP SA bootstrap secret, namespace labeling). These create new resources on OpenShift that don't conflict with the existing GCP deployment.
+Complete the [prerequisites](#prerequisites) above (GCP SA bootstrap secret, namespace labeling). These create new resources on OpenShift that don't conflict with the existing GCP deployment.
 
 ### Step 4: Apply the Application CR
 
@@ -256,7 +237,7 @@ oc apply -f google-cloud/application.yaml
 ```
 
 ArgoCD will:
-1. Create the K8s resources on OpenShift (ConfigMap, ExternalSecret, ServiceAccount)
+1. Create the K8s resources on OpenShift (ConfigMap, Secret, ServiceAccount)
 2. Run the PostSync Job, which triggers Cloud Build
 3. Cloud Build will redeploy Cloud Run with the values from the ConfigMap
 
@@ -291,36 +272,6 @@ git commit -m "chore: bump agent to v1.3.0"
 git push origin bump-agent-v1.3.0
 gh pr create --title "Bump agent to v1.3.0"
 # SRE reviews and merges → ArgoCD syncs ConfigMap → PostSync Job → Cloud Build → Cloud Run
-```
-
-## Secrets Management
-
-Secrets are managed using the **External Secrets Operator** (ESO), Red Hat's supported approach for GitOps secrets on OpenShift.
-
-**How it works:**
-1. Application secrets (SSO credentials, database URLs, etc.) are stored in **GCP Secret Manager** — created by `setup.sh` or managed directly
-2. A **SecretStore** CR configures ESO to connect to GCP Secret Manager using the bootstrap GCP SA key
-3. An **ExternalSecret** CR tells ESO which GCP SM secrets to pull into K8s Secrets
-4. ESO automatically refreshes secrets based on `externalSecrets.refreshInterval` (default: 1 hour)
-5. Cloud Run services read directly from GCP Secret Manager — only the GCP SA key needs to be on the OpenShift cluster
-
-**Bootstrap credential:** The GCP SA key is the only secret managed manually. Create it once per cluster as described in [prerequisites](#2-create-the-gcp-service-account-and-bootstrap-secret).
-
-**Disabling ESO** (use manually-created K8s Secrets instead):
-
-```yaml
-externalSecrets:
-  enabled: false
-deploy:
-  gcpSecretName: my-gcp-secret
-```
-
-Then create the secret manually:
-
-```bash
-oc create secret generic my-gcp-secret \
-  --from-file=gcp-service-account-key=sa-key.json \
-  -n rh-lightspeed-agent
 ```
 
 ## Cloud Build Substitutions

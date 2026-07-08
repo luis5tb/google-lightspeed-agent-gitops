@@ -35,9 +35,6 @@ deploy:
   # gitTokenSecret: git-credentials
   #gcpSecretName: gcp-sa-bootstrap
 
-#externalSecrets:
-#  enabled: false
-
 pubsub:
   topic: projects/cloudcommerceproc-prod/topics/redhat-marketplace-dev
   subscription: marketplace-events-sub
