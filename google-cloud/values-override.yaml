@@ -38,6 +38,10 @@ deploy:
 externalSecrets:
   enabled: false
 
+pubsub:
+  topic: projects/cloudcommerceproc-prod/topics/redhat-marketplace-dev
+  subscription: marketplace-events-sub
+
 security:
   scanSeverity: CRITICAL
 
