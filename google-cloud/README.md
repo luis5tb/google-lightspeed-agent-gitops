@@ -103,6 +103,20 @@ images:
 services:
   serviceAccountName: lightspeed-agent  # match your Cloud Run runtime SA
 
+# Pub/Sub — Marketplace uses a cross-project topic
+pubsub:
+  topic: projects/cloudcommerceproc-prod/topics/my-gcp-project-id
+  subscription: marketplace-events-sub  # match existing subscription name
+
+# Load balancer — set domains when GCLB is enabled
+loadBalancer:
+  agent:
+    enabled: "true"
+    domain: agent.example.com
+  handler:
+    enabled: "true"
+    domain: dcr.example.com
+
 deploy:
   gitRepo: https://github.com/RHEcosystemAppEng/google-lightspeed-agent.git
   gitBranch: main
