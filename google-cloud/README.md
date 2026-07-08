@@ -174,6 +174,14 @@ gcloud run services describe marketplace-handler \
 # Check load balancer configuration
 gcloud compute forwarding-rules list --project=${GOOGLE_CLOUD_PROJECT}
 gcloud compute ssl-certificates list --project=${GOOGLE_CLOUD_PROJECT}
+
+# Check Pub/Sub (Marketplace uses a cross-project topic)
+gcloud pubsub subscriptions list --project=${GOOGLE_CLOUD_PROJECT}
+
+# Check Cloud Run service account name
+gcloud run services describe lightspeed-agent \
+  --region=${GOOGLE_CLOUD_LOCATION} --project=${GOOGLE_CLOUD_PROJECT} \
+  --format='value(spec.template.spec.serviceAccountName)'
 ```
 
 ### Step 2: Match `values-override.yaml` to current state
@@ -203,12 +211,19 @@ loadBalancer:
 services:
   serviceAccountName: lightspeed-agent  # must match the Cloud Run runtime SA
 
+# Pub/Sub — Marketplace uses a cross-project topic
+pubsub:
+  topic: projects/cloudcommerceproc-prod/topics/my-project-id
+  subscription: marketplace-events-sub  # match existing subscription name
+
 deploy:
   gitRepo: https://github.com/RHEcosystemAppEng/google-lightspeed-agent.git
   gitBranch: main                # must match application.yaml targetRevision
 ```
 
 > **`services.serviceAccountName`** must match the Cloud Run runtime service account name used by `deploy/cloudrun/setup.sh` (`SERVICE_ACCOUNT_NAME`, default: `lightspeed-agent`). If your environment uses a different name (e.g., `sa-lightspeed-agent`), set it here — a mismatch causes `iam.serviceaccounts.actAs` permission errors during Cloud Build deployment.
+
+> **`pubsub.topic`** — Google Cloud Marketplace provisions a cross-project topic (e.g., `projects/cloudcommerceproc-prod/topics/{project-id}`). The default `marketplace-entitlements` is for local development. Check your existing subscriptions with `gcloud pubsub subscriptions list` and set `pubsub.subscription` to the existing subscription name to avoid creating a duplicate.
 
 ### Step 3: Ensure prerequisites are in place
 
