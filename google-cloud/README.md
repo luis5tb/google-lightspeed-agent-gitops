@@ -46,7 +46,10 @@ export GOOGLE_CLOUD_PROJECT=my-project-id
 CLOUD_RUN_SA=sa-lightspeed-agent bash deploy/gitops/setup/setup-gcp-sa.sh
 ```
 
-This creates a GCP service account (`lightspeed-gitops`) with the required IAM roles and stores its key as a K8s Secret (`gcp-sa-bootstrap`) on the OpenShift cluster. ESO uses this to authenticate to GCP Secret Manager.
+This creates a GCP service account (`lightspeed-gitops`) with the required IAM roles and stores its key in **two places**:
+
+- **GCP Secret Manager** (`gcp-service-account-key`) — source of truth; ESO pulls from here to create the K8s Secret used by the deploy Job
+- **K8s Secret on OpenShift** (`gcp-sa-bootstrap`) — bootstrap credential; the SecretStore uses this to authenticate ESO to GCP Secret Manager
 
 | Role | Scope | Purpose |
 |---|---|---|
@@ -56,12 +59,13 @@ This creates a GCP service account (`lightspeed-gitops`) with the required IAM r
 | `roles/serviceusage.serviceUsageConsumer` | Project | `gcloud builds submit` API access |
 | `roles/iam.serviceAccountUser` | Cloud Run runtime SA | Impersonate the runtime SA |
 
-Alternatively, create the bootstrap secret manually:
+To disable ESO and use the bootstrap secret directly instead:
 
-```bash
-oc create secret generic gcp-sa-bootstrap \
-  --from-file=gcp-service-account-key=sa-key.json \
-  -n rh-lightspeed-agent
+```yaml
+externalSecrets:
+  enabled: false
+deploy:
+  gcpSecretName: gcp-sa-bootstrap
 ```
 
 ### 3. Grant ArgoCD access to the namespace
