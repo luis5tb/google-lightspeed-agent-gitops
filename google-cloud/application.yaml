@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: lightspeed-agent-gcp
-  namespace: openshift-gitops
+  namespace: rh-lightspeed-agent-argocd
   labels:
     app.kubernetes.io/part-of: lightspeed-agent
     app.kubernetes.io/managed-by: argocd
@@ -10,7 +10,7 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: default
+  project: rh-lightspeed-agent
   sources:
     # Values source — environment overrides from the GITOPS repo
     - repoURL: https://github.com/luis5tb/google-lightspeed-agent-gitops.git
@@ -30,7 +30,7 @@ spec:
     # registered with ArgoCD first. Note: PostSync Jobs run on the destination
     # cluster, so ESO and the bootstrap secret must exist there.
     server: https://kubernetes.default.svc
-    namespace: lightspeed-agent-gcp
+    namespace: rh-lightspeed-agent
   syncPolicy:
     automated:
       selfHeal: true
