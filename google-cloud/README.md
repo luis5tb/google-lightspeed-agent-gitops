@@ -54,7 +54,6 @@ This creates a GCP service account (`lightspeed-gitops`) with the required IAM r
 | `roles/cloudbuild.builds.editor` | Project | Submit Cloud Build pipelines |
 | `roles/run.admin` | Project | Deploy Cloud Run services |
 | `roles/serviceusage.serviceUsageConsumer` | Project | `gcloud builds submit` API access |
-| `roles/storage.objectAdmin` | Project | Upload source to the Cloud Build staging bucket |
 | `roles/iam.serviceAccountUser` | Cloud Run runtime SA | Impersonate the runtime SA |
 
 Alternatively, create the bootstrap secret manually:
