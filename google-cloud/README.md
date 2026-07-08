@@ -101,6 +101,9 @@ images:
   mcp:
     tag: "20260701"
 
+services:
+  serviceAccountName: lightspeed-agent  # match your Cloud Run runtime SA
+
 deploy:
   gitRepo: https://github.com/RHEcosystemAppEng/google-lightspeed-agent.git
   gitBranch: main
@@ -197,10 +200,15 @@ loadBalancer:
     enabled: "true"
     domain: dcr.example.com
 
+services:
+  serviceAccountName: lightspeed-agent  # must match the Cloud Run runtime SA
+
 deploy:
   gitRepo: https://github.com/RHEcosystemAppEng/google-lightspeed-agent.git
   gitBranch: main                # must match application.yaml targetRevision
 ```
+
+> **`services.serviceAccountName`** must match the Cloud Run runtime service account name used by `deploy/cloudrun/setup.sh` (`SERVICE_ACCOUNT_NAME`, default: `lightspeed-agent`). If your environment uses a different name (e.g., `sa-lightspeed-agent`), set it here — a mismatch causes `iam.serviceaccounts.actAs` permission errors during Cloud Build deployment.
 
 ### Step 3: Ensure prerequisites are in place
 

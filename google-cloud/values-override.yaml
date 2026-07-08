@@ -40,3 +40,6 @@ externalSecrets:
 
 security:
   scanSeverity: CRITICAL
+
+services:
+  serviceAccountName: sa-lightspeed-agent
