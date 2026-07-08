@@ -39,6 +39,13 @@ export GOOGLE_CLOUD_PROJECT=my-project-id
 bash deploy/gitops/setup/setup-gcp-sa.sh
 ```
 
+If your Cloud Run runtime SA uses a non-default name (the default is `lightspeed-agent`), set `CLOUD_RUN_SA` to match:
+
+```bash
+export GOOGLE_CLOUD_PROJECT=my-project-id
+CLOUD_RUN_SA=sa-lightspeed-agent bash deploy/gitops/setup/setup-gcp-sa.sh
+```
+
 This creates a GCP service account (`lightspeed-gitops`) with the required IAM roles and stores its key as a K8s Secret (`gcp-sa-bootstrap`) on the OpenShift cluster. ESO uses this to authenticate to GCP Secret Manager.
 
 | Role | Scope | Purpose |
@@ -46,7 +53,8 @@ This creates a GCP service account (`lightspeed-gitops`) with the required IAM r
 | `roles/secretmanager.secretAccessor` | Project | ESO reads secrets from GCP SM |
 | `roles/cloudbuild.builds.editor` | Project | Submit Cloud Build pipelines |
 | `roles/run.admin` | Project | Deploy Cloud Run services |
-| `roles/serviceusage.serviceUsageConsumer` | Project | `gcloud builds submit` needs Cloud Storage bucket access |
+| `roles/serviceusage.serviceUsageConsumer` | Project | `gcloud builds submit` API access |
+| `roles/storage.objectAdmin` | Project | Upload source to the Cloud Build staging bucket |
 | `roles/iam.serviceAccountUser` | Cloud Run runtime SA | Impersonate the runtime SA |
 
 Alternatively, create the bootstrap secret manually:
