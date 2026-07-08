@@ -387,6 +387,16 @@ secrets:
   gcpServiceAccountKey: "true"
 ```
 
+**GCP SA key secret (Vertex AI only):** If using Vertex AI (`google.useVertexAI: true`), the agent needs a GCP service account key. Create the secret with the key named `sa-key.json`:
+
+```bash
+oc create secret generic lightspeed-agent-gcp-sa-key \
+  --from-file=sa-key.json=<path-to-your-gcp-sa-key.json> \
+  -n ${AGENT_NAMESPACE}
+```
+
+The key name **must** be `sa-key.json` — the chart mounts it at `/var/run/secrets/gcp/sa-key.json`. If you have an existing key file with a different name (e.g., `credentials.json`), use `--from-file=sa-key.json=credentials.json` to rename it during creation.
+
 #### Step 2: Apply with Manual Sync First
 
 Update `openshift/application.yaml` — set the namespace to your existing one:
