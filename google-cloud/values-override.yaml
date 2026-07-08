@@ -33,10 +33,10 @@ deploy:
   gitRepo: https://github.com/luis5tb/google-lightspeed-agent.git
   # Uncomment for private repositories:
   # gitTokenSecret: git-credentials
-  gcpSecretName: gcp-sa-bootstrap
+  #gcpSecretName: gcp-sa-bootstrap
 
-externalSecrets:
-  enabled: false
+#externalSecrets:
+#  enabled: false
 
 pubsub:
   topic: projects/cloudcommerceproc-prod/topics/redhat-marketplace-dev
