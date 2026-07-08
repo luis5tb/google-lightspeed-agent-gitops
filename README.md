@@ -377,6 +377,14 @@ deploymentMode: <current mode>
 
 secrets:
   create: false
+  # When using Vertex AI with a pre-existing GCP SA key secret:
+  # Set to any non-empty value to enable the volume mount and
+  # GOOGLE_APPLICATION_CREDENTIALS env var in the agent pod.
+  # With create: false, this only enables the mount — it does NOT
+  # create the secret. The secret must already exist as
+  # <release-name>-gcp-sa-key in the namespace.
+  # With create: true, set this to the actual JSON key content.
+  gcpServiceAccountKey: "true"
 ```
 
 #### Step 2: Apply with Manual Sync First
