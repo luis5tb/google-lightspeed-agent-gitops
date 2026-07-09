@@ -9,9 +9,9 @@ project:
 # Source images are pulled from Quay.io, scanned, and pushed to GCR by Cloud Build.
 images:
   agent:
-    tag: 40ebfd9ed7ddefdc429c047b6f5e5c90e8e445ba
+    tag: 259c11a90188576f2e9dd545190cbb86dec71f05
   handler:
-    tag: 40ebfd9ed7ddefdc429c047b6f5e5c90e8e445ba
+    tag: 259c11a90188576f2e9dd545190cbb86dec71f05
   mcp:
     tag: latest
 
@@ -38,9 +38,18 @@ deploy:
 pubsub:
   topic: projects/cloudcommerceproc-prod/topics/redhat-marketplace-dev
   subscription: marketplace-events-sub
+  serviceControlServiceName: test-agent-1.endpoints.redhat-marketplace-dev.cloud.goog
 
 security:
   scanSeverity: CRITICAL
 
 services:
   serviceAccountName: sa-lightspeed-agent
+
+agent:
+  geminiModel: "gemini-3.5-flash"
+  loggingDetail: "detailed"
+
+mcp:
+  debug: "true"
+
