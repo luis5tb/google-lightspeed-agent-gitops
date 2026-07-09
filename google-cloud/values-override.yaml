@@ -9,9 +9,9 @@ project:
 # Source images are pulled from Quay.io, scanned, and pushed to GCR by Cloud Build.
 images:
   agent:
-    tag: 40ebfd9ed7ddefdc429c047b6f5e5c90e8e445ba
+    tag: on-pr-98e0e5d29f52f52cdd8e513ddbc4b789e91e8064
   handler:
-    tag: 40ebfd9ed7ddefdc429c047b6f5e5c90e8e445ba
+    tag: on-pr-98e0e5d29f52f52cdd8e513ddbc4b789e91e8064
   mcp:
     tag: latest
 
@@ -29,7 +29,7 @@ loadBalancer:
 deploy:
   # Git branch to clone when submitting Cloud Build.
   # Cloud Build uses the source code from this branch (cloudbuild.yaml, service YAMLs).
-  gitBranch: gitops-argocd-deployment
+  gitBranch: do-not-merge
   gitRepo: https://github.com/luis5tb/google-lightspeed-agent.git
   # Uncomment for private repositories:
   # gitTokenSecret: git-credentials
@@ -44,3 +44,11 @@ security:
 
 services:
   serviceAccountName: sa-lightspeed-agent
+
+agent:
+  geminiModel: "gemini-3.5-flash"
+  loggingDetail: "detailed"
+
+mcp:
+  debug: "true"
+
