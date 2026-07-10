@@ -48,6 +48,7 @@ services:
 agent:
   geminiModel: "gemini-3.5-flash"
   loggingDetail: "detailed"
+  a2uiEnabled: "true"
 
 mcp:
   debug: "true"
