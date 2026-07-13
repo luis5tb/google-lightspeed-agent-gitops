@@ -30,7 +30,7 @@ loadBalancer:
     domain: lightspeed-dcr-stage.emerge-partners.devcluster.openshift.com
     cloudArmor:
       enabled: "true"
-      sensitivity: "2"  
+      sensitivity: "2"
 
 # Deploy Job settings
 deploy:
@@ -75,3 +75,8 @@ rateLimit:
  keyPrefix: "lightspeed-stage:ratelimit"
  redisUrlSecret: "rate-limit-redis-url-stage"
  redisCaCertSecret: "redis-ca-cert-stage"
+
+secrets:
+  databaseUrl: "database-url-stage"
+  sessionDatabaseUrl: "session-database-url-stage"
+  dcrEncryptionKey: "dcr-encryption-key-stage"

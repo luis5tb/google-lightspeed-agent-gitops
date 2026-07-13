@@ -75,3 +75,8 @@ agent:
 # keyPrefix: "lightspeed:ratelimit"
 # redisUrlSecret: "rate-limit-redis-url"
 # redisCaCertSecret: "redis-ca-cert"
+
+# secrets:
+#   databaseUrl: "database-url"
+#   sessionDatabaseUrl: "session-database-url"
+#   dcrEncryptionKey: "dcr-encryption-key"
