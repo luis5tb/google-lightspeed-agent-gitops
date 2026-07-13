@@ -1,0 +1,71 @@
+# Example environment-specific overrides.
+# Rename this file for your environment (e.g., values-staging.yaml, values-production.yaml).
+
+# Target Google Cloud project where the Cloud Run agent will be deployed
+project:
+  id: redhat-marketplace-dev
+
+# Container image tags — the primary values updated per PR / release.
+# Source images are pulled from Quay.io, scanned, and pushed to GCR by Cloud Build.
+images:
+  agent:
+    tag: 259c11a90188576f2e9dd545190cbb86dec71f05
+  handler:
+    tag: 259c11a90188576f2e9dd545190cbb86dec71f05
+  mcp:
+    tag: latest
+
+# Google Cloud Load Balancer — enable and set domain names for HTTPS endpoints.
+# When enabled, Cloud Build creates a GCLB with managed SSL certificate.
+loadBalancer:
+  name: lightspeed-lb-stage
+  agent:
+    enabled: "true"
+    domain: lightspeed-agent-stage.emerge-partners.devcluster.openshift.com
+  handler:
+    enabled: "true"
+    domain: lightspeed-dcr-stage.emerge-partners.devcluster.openshift.com
+
+# Deploy Job settings
+deploy:
+  # Git branch to clone when submitting Cloud Build.
+  # Cloud Build uses the source code from this branch (cloudbuild.yaml, service YAMLs).
+  gitBranch: gitops-argocd-deployment
+  gitRepo: https://github.com/luis5tb/google-lightspeed-agent.git
+  # Uncomment for private repositories:
+  # gitTokenSecret: git-credentials
+  gcpSecretName: gcp-sa-bootstrap-stage
+  serviceAccount:
+    name: lightspeed-deploy-stage
+
+pubsub:
+  topic: projects/cloudcommerceproc-prod/topics/redhat-marketplace-dev
+  subscription: marketplace-events-sub-stage
+  invokerName: pubsub-invoker-stage
+  serviceControlServiceName: staging-agent.endpoints.my-project-id.cloud.goog
+
+security:
+  scanSeverity: CRITICAL
+
+infrastructure:
+  dbInstanceName: lighspeed-agent-db-stage
+  vpcConnectorName: ls-redis-stage
+
+services:
+  serviceAccountName: sa-lightspeed-agent-stage
+  agent:
+    name: lightspeed-agent-stage
+  handler:
+    name: marketplace-handler-stage
+
+agent:
+  geminiModel: "gemini-3.5-flash"
+  loggingDetail: "detailed"
+
+mcp:
+  debug: "true"
+
+rateLimit:
+ keyPrefix: "lightspeed-stage:ratelimit"
+ redisUrlSecret: "rate-limit-redis-url-stage"
+ redisCaCertSecret: "redis-ca-cert-stage"

@@ -1,0 +1,71 @@
+# Example environment-specific overrides.
+# Rename this file for your environment (e.g., values-staging.yaml, values-production.yaml).
+
+# Target Google Cloud project where the Cloud Run agent will be deployed
+project:
+  id: redhat-marketplace-public
+
+# Container image tags — the primary values updated per PR / release.
+# Source images are pulled from Quay.io, scanned, and pushed to GCR by Cloud Build.
+images:
+  agent:
+    tag: 259c11a90188576f2e9dd545190cbb86dec71f05
+  handler:
+    tag: 259c11a90188576f2e9dd545190cbb86dec71f05
+  mcp:
+    tag: latest
+
+# Google Cloud Load Balancer — enable and set domain names for HTTPS endpoints.
+# When enabled, Cloud Build creates a GCLB with managed SSL certificate.
+loadBalancer:
+  name: lightspeed-lb
+  agent:
+    enabled: "true"
+    domain: lightspeed.gemini-enterprise.agents.redhat.com
+  handler:
+    enabled: "true"
+    domain: dcr-lightspeed.gemini-enterprise.agents.redhat.com
+
+# Deploy Job settings
+deploy:
+  # Git branch to clone when submitting Cloud Build.
+  # Cloud Build uses the source code from this branch (cloudbuild.yaml, service YAMLs).
+  gitBranch: gitops-argocd-deployment
+  gitRepo: https://github.com/luis5tb/google-lightspeed-agent.git
+  # Uncomment for private repositories:
+  # gitTokenSecret: git-credentials
+  gcpSecretName: gcp-sa-bootstrap-prod
+  serviceAccount:
+    name: lightspeed-deploy-prod
+
+pubsub:
+  topic: projects/cloudcommerceproc-prod/topics/redhat-marketplace-public
+  subscription: marketplace-events-sub
+  invokerName: lightspeedagent-pubsub-invoker
+  serviceControlServiceName: rh-lightspeed-agent.endpoints.redhat-marketplace-public.cloud.goog
+
+security:
+  scanSeverity: CRITICAL
+
+infrastructure:
+  dbInstanceName: lighspeed-agent-db
+  vpcConnectorName: agent-redis-connector
+
+services:
+  serviceAccountName: sa-lightspeed-agent
+  agent:
+    name: lightspeed-agent
+  handler:
+    name: marketplace-handler
+
+agent:
+  geminiModel: "gemini-3.5-flash"
+#  loggingDetail: "detailed"
+
+#mcp:
+#  debug: "true"
+
+#rateLimit:
+# keyPrefix: "lightspeed:ratelimit"
+# redisUrlSecret: "rate-limit-redis-url"
+# redisCaCertSecret: "redis-ca-cert"
