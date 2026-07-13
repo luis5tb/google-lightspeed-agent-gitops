@@ -274,6 +274,17 @@ gh pr create --title "Bump agent to v1.3.0"
 # SRE reviews and merges → ArgoCD syncs ConfigMap → PostSync Job → Cloud Build → Cloud Run
 ```
 
+## Multiple Instances on the Same GCP Project
+
+To deploy multiple agent instances to the same GCP project (e.g., staging + production), each instance needs unique GCP resource names, its own Pub/Sub subscription, and a separate directory in this repo. See the [multi-instance deployment guide](https://github.com/RHEcosystemAppEng/google-lightspeed-agent/blob/main/deploy/gitops/README.md#multiple-instances-on-the-same-gcp-project) in the app repo for the full step-by-step, including:
+
+- Which GCP resources collide and their override keys
+- GCP resource name length limits
+- Pub/Sub event routing via `serviceControlServiceName`
+- Redis rate limit isolation via `rateLimit.keyPrefix`
+- Per-instance directory structure for this repo
+- Same-namespace vs separate-namespace options
+
 ## Cloud Build Substitutions
 
 The ConfigMap maps `values.yaml` fields to Cloud Build `_VARIABLE` names. All substitutions match `cloudbuild.yaml` in the app repo root. Key mappings:
