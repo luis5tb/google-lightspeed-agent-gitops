@@ -18,12 +18,19 @@ images:
 # Google Cloud Load Balancer — enable and set domain names for HTTPS endpoints.
 # When enabled, Cloud Build creates a GCLB with managed SSL certificate.
 loadBalancer:
+  name: lightspeed-lb
   agent:
     enabled: "true"
     domain: lightspeed-agent.emerge-partners.devcluster.openshift.com
+    cloudArmor:
+      enabled: "true"
+      sensitivity: "1"
   handler:
     enabled: "true"
     domain: lightspeed-dcr.emerge-partners.devcluster.openshift.com
+    cloudArmor:
+      enabled: "true"
+      sensitivity: "2"
 
 # Deploy Job settings
 deploy:
@@ -38,6 +45,7 @@ deploy:
 pubsub:
   topic: projects/cloudcommerceproc-prod/topics/redhat-marketplace-dev
   subscription: marketplace-events-sub
+  #invokerName: pubsub-invoker
   serviceControlServiceName: test-agent-1.endpoints.redhat-marketplace-dev.cloud.goog
 
 security:
@@ -53,3 +61,7 @@ agent:
 mcp:
   debug: "true"
 
+#rateLimit:
+# keyPrefix: "lightspeed:ratelimit"
+# redisUrlSecret: "rate-limit-redis-url"
+# redisCaCertSecret: "redis-ca-cert"

@@ -22,9 +22,15 @@ loadBalancer:
   agent:
     enabled: "true"
     domain: lightspeed.gemini-enterprise.agents.redhat.com
+    cloudArmor:
+      enabled: "true"
+      sensitivity: "1"
   handler:
     enabled: "true"
     domain: dcr-lightspeed.gemini-enterprise.agents.redhat.com
+    cloudArmor:
+      enabled: "true"
+      sensitivity: "2"
 
 # Deploy Job settings
 deploy:
