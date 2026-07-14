@@ -23,14 +23,16 @@ loadBalancer:
     enabled: "true"
     domain: lightspeed-agent-stage.emerge-partners.devcluster.openshift.com
     cloudArmor:
-      enabled: "true"
-      sensitivity: "1"
+      enabled: "false"
+      #enabled: "true"
+      #sensitivity: "1"
   handler:
     enabled: "true"
     domain: lightspeed-dcr-stage.emerge-partners.devcluster.openshift.com
     cloudArmor:
-      enabled: "true"
-      sensitivity: "2"
+      enabled: "false"
+      #enabled: "true"
+      #sensitivity: "2"
 
 # Deploy Job settings
 deploy:
