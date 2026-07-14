@@ -68,6 +68,7 @@ services:
 agent:
   geminiModel: "gemini-3.5-flash"
   loggingDetail: "detailed"
+  #otelServiceName: "lightspeed-agent-stage"
 
 mcp:
   debug: "true"
