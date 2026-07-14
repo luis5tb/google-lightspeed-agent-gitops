@@ -52,6 +52,10 @@ security:
   scanSeverity: CRITICAL
   allowUnauthenticated: "true"
 
+infrastructure:
+  dbInstanceName: lightspeed-agent-db
+  vpcConnectorName: lightspeed-redis-conn
+
 services:
   serviceAccountName: sa-lightspeed-agent
 
