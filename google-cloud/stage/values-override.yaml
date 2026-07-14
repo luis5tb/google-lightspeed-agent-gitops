@@ -54,7 +54,7 @@ security:
   scanSeverity: CRITICAL
 
 infrastructure:
-  dbInstanceName: lighspeed-agent-db-stage
+  dbInstanceName: lightspeed-agent-db-stage
   vpcConnectorName: ls-redis-stage
 
 services:
