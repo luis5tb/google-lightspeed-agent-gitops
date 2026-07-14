@@ -52,6 +52,7 @@ pubsub:
 
 security:
   scanSeverity: CRITICAL
+  allowUnauthenticated: "true"
 
 infrastructure:
   dbInstanceName: lightspeed-agent-db

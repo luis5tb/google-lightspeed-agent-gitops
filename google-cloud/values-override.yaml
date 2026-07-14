@@ -50,6 +50,7 @@ pubsub:
 
 security:
   scanSeverity: CRITICAL
+  allowUnauthenticated: "true"
 
 services:
   serviceAccountName: sa-lightspeed-agent
