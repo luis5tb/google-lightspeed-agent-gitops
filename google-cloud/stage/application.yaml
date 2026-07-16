@@ -17,8 +17,8 @@ spec:
       targetRevision: main
       ref: values
     # Helm chart source — from the APP repo
-    - repoURL: https://github.com/luis5tb/google-lightspeed-agent.git
-      targetRevision: gitops-argocd-deployment
+    - repoURL: https://github.com/RHEcosystemAppEng/google-lightspeed-agent.git
+      targetRevision: main
       path: deploy/gitops/google-cloud
       helm:
         valueFiles:

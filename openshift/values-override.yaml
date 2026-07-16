@@ -6,7 +6,7 @@
 agent:
   image:
     repository: quay.io/ecosystem-appeng/google-lightspeed-agent
-    tag: on-pr-d229a4e07a8fc5682474025da91625ad9fe40cc1
+    tag: c0a7506933dd348de0650b63db70eb4b50447b21
   # Public URL where the agent Route is exposed on this cluster
   providerUrl: "https://lightspeed-agent-rh-lightspeed-agent.apps.ai5-devel.apps.eco-engineering.lab.eng.tlv2.redhat.com"
 
@@ -17,7 +17,7 @@ mcp:
 handler:
   image:
     repository: quay.io/ecosystem-appeng/google-marketplace-handler
-    tag: on-pr-d229a4e07a8fc5682474025da91625ad9fe40cc1
+    tag: c0a7506933dd348de0650b63db70eb4b50447b21
 
 standaloneUI:
   image:
