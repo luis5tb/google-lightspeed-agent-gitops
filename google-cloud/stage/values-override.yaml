@@ -48,7 +48,7 @@ pubsub:
   topic: projects/cloudcommerceproc-prod/topics/redhat-marketplace-dev
   subscription: marketplace-events-sub-stage
   invokerName: pubsub-invoker-stage
-  serviceControlServiceName: staging-agent.endpoints.my-project-id.cloud.goog
+  serviceControlServiceName: stage-lightspeed-agent.endpoints.redhat-marketplace-dev.cloud.goog
 
 security:
   scanSeverity: CRITICAL
